@@ -1,39 +1,87 @@
 <!doctype html>
 <html>
-  <head>
-    <title>Socket.IO chat</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
-      #messages { margin-bottom: 40px }
-    </style>
-  </head>
-  <body>
-    <ul id="messages"></ul>
-    <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
-    </form>
-    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
-    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-    <script>
-      $(function () {
-        var socket = io();
-        $('form').submit(function(){
-          socket.emit('chat message', $('#m').val());
-          $('#m').val('');
-          return false;
+
+<head>
+  <title>Socket.IO chat</title>
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+    crossorigin="anonymous">
+
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous">
+
+  <script src="http://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+    crossorigin="anonymous"></script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
+
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+    crossorigin="anonymous"></script>
+
+
+</head>
+
+<body ng-app="MyApp">
+  <div class="container" ng-controller="MyController">
+    <div class="jumbotron">
+      <h1>Bizagi PaaS!</h1>
+      <p>
+        <strong>WebAppName: </strong>{{BizagiPaaS.webAppName}}</p>
+      <p>
+        <strong>ResourceGroupName: </strong>{{BizagiPaaS.resourceGroupName}}</p>
+      <p>
+        <strong>Restarting: </strong>{{BizagiPaaS.restarting}}</p>
+      <p>
+        <strong>Slot: </strong>{{BizagiPaaS.slot}}</p>
+      <p>
+        <a ng-click="restart()" class="btn btn-primary btn-lg" href="#" role="button">Restart</a>
+        <a ng-click="maintenance()" class="btn btn-warning btn-lg" href="#" role="button">Activate Maintenance Window</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+  <script>
+    var socket = io();
+    angular.module('MyApp', [])
+      .controller('MyController', function ($scope) {
+        $scope.BizagiPaaS = {
+          restarting: false,
+          slot: 'production',
+          resourceGroupName: "PAAS_COMMANDS",
+          webAppName: "BizagiPaasEnterprise",
+          url: 'https://bizagipaasenterprise.azurewebsites.net/'
+        }
+        $scope.restart = function () {
+          socket.emit('restart', $scope.BizagiPaaS)
+          $scope.BizagiPaaS.restarting = true
+          console.log('sending event')
+        }
+        socket.on('restart', function (data) {
+          console.log(data)
+          $scope.$apply(function () {
+            $scope.BizagiPaaS.restarting = false
+          })
         });
-        socket.on('chat message', function(msg){
-          $('#messages').append($('<li>').text(msg));
-          window.scrollTo(0, document.body.scrollHeight);
+
+
+        $scope.maintenance = function () {
+          socket.emit('maintenance', $scope.BizagiPaaS)
+          $scope.BizagiPaaS.currentSlot = $scope.BizagiPaaS.slot
+          $scope.BizagiPaaS.slot = 'changing'
+          console.log('sending event')
+        }
+        socket.on('maintenance', function (data) {
+          console.log(data)
+          $scope.$apply(function () {
+            $scope.BizagiPaaS.slot = $scope.BizagiPaaS.currentSlot == 'production' ? 'maintenance' : 'production'
+          })
         });
-      });
-    </script>
-  </body>
+      })
+  </script>
+</body>
+
 </html>
